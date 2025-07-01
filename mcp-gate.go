@@ -59,4 +59,5 @@ func main() {
 	cmd.Execute()
 	configLogging()
 	fmt.Printf("----- %s -----\n", appConfig.App.Name)
+
 }
