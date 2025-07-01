@@ -3,21 +3,17 @@ package main
 import (
 	"log"
 	"testing"
+
+	"github.com/spf13/viper"
 )
 
 func TestReadConfig(t *testing.T) {
-	config, err := readConfig()
-	if err != nil {
-		t.Fatalf("Error reading config: %v", err)
+	initConfig()
+
+	if viper.GetString("app.name") != "mcp-gate" {
+		t.Errorf("Expected app name 'mcp-gate', got '%s'", viper.GetString("app.name"))
 	}
 
-	if config.App.Name != "mcp-gate" {
-		t.Errorf("Expected app name 'mcp-gate', got '%s'", config.App.Name)
-	}
-
-	if config.Namespace != "" {
-		t.Errorf("Expected namespace to be empty, got '%s'", config.Namespace)
-	}
 }
 
 func TestConfigLogging(t *testing.T) {

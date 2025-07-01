@@ -3,9 +3,11 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 	"strings"
 
 	"github.com/ebamberg/mcp-gate/cmd"
+	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
@@ -16,7 +18,9 @@ type AppConfig struct {
 	Namespace string `mapstructure:"namespace"`
 }
 
-func readConfig() (AppConfig, error) {
+var Config AppConfig
+
+func initConfig() {
 	// Set up viper to read the config.yaml file
 	viper.SetConfigName("config") // Config file name without extension
 	viper.SetConfigType("yaml")   // Config file type
@@ -37,13 +41,16 @@ func readConfig() (AppConfig, error) {
 	// Read the config file
 	err := viper.ReadInConfig()
 	if err != nil {
-		return AppConfig{}, err
+		fmt.Println("Can't read config:", err)
+		os.Exit(1)
 	}
-	// Create an instance of AppConfig
-	var config AppConfig
+
 	// Unmarshal the config file into the AppConfig struct
-	err = viper.Unmarshal(&config)
-	return config, err
+	err = viper.Unmarshal(&Config)
+	if err != nil {
+		fmt.Println("Can't read config:", err)
+		os.Exit(1)
+	}
 }
 
 func configLogging() {
@@ -52,12 +59,9 @@ func configLogging() {
 }
 
 func main() {
-	appConfig, err := readConfig()
-	if err != nil {
-		log.Fatalf("Error reading config file, %s", err)
-	}
-	cmd.Execute()
+
 	configLogging()
-	fmt.Printf("----- %s -----\n", appConfig.App.Name)
+	cobra.OnInitialize(initConfig)
+	cmd.Execute()
 
 }
