@@ -51,7 +51,7 @@ func addMCPGateToClaudeDesktopConfig(config map[string]interface{}) error {
 	var mcpServers map[string]interface{}
 	if mcpnode != nil {
 		mcpServers = mcpnode.(map[string]interface{})
-
+		// we override the mcp-gate if it already exists for now
 		//		for key, _ := range mcpServers {
 		//			if key == "mcp-gate" {
 		//				log.Println("MCP Gate already installed in Claude Desktop config")
@@ -62,7 +62,7 @@ func addMCPGateToClaudeDesktopConfig(config map[string]interface{}) error {
 		if err != nil {
 			log.Fatalln("Error getting executable file path:", err)
 		}
-		mcpServers["mcp-gate"] = map[string]interface{}{
+		mcpServers["mcp-gate"] = map[string]any{
 			"command": executable,
 			"args":    []string{"server", "--transport", "ipc"},
 		}
