@@ -10,7 +10,7 @@ import (
 	"log"
 	"os"
 	"path"
-	"runtime"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 )
@@ -33,17 +33,9 @@ var claudeCmd = &cobra.Command{
 	`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("Installing mcp gate into local Claude Desktop")
-		var configfilename = ""
-		switch runtime.GOOS {
-		case "windows":
-			configfilename = "%APPDATA%\\Claude\\claude_desktop_config.json"
-		case "darwin":
-			userhome, _ := os.UserHomeDir()
-			configfilename = path.Join(userhome, "Library/Application Support/Claude/claude_desktop_config.json")
-		default:
-			fmt.Println("Operation system not supported")
-			os.Exit(-1)
-		}
+		userconfigdir, _ := os.UserConfigDir()
+		configdir := path.Join(userconfigdir, "Claude")
+		configfilename := path.Join(configdir, "claude_desktop_config.json")
 		if config, found := readClaudeDesktopConfig(configfilename); found {
 			addMCPGateToClaudeDesktopConfig(config)
 		} else {
@@ -59,14 +51,34 @@ func addMCPGateToClaudeDesktopConfig(config map[string]interface{}) error {
 	var mcpServers map[string]interface{}
 	if mcpnode != nil {
 		mcpServers = mcpnode.(map[string]interface{})
-	} //else {
-	//	mcpServers = map[string]interface{}
-	// }
-	fmt.Printf("%s\n", mcpnode)
-	for _, n := range mcpServers {
-		fmt.Println(n)
+
+		//		for key, _ := range mcpServers {
+		//			if key == "mcp-gate" {
+		//				log.Println("MCP Gate already installed in Claude Desktop config")
+		//				return nil
+		//			}
+		//		}
+		executable, err := getExecutableFilePath()
+		if err != nil {
+			log.Fatalln("Error getting executable file path:", err)
+		}
+		mcpServers["mcp-gate"] = map[string]interface{}{
+			"command": executable,
+			"args":    []string{"server", "--transport", "ipc"},
+		}
 	}
+	fmt.Println(mcpnode)
 	return nil
+}
+
+func getExecutableFilePath() (string, error) {
+	// get the path to the current executable
+	execPath, err := os.Executable()
+	if err != nil {
+		return "", err
+	}
+	execPath, err = filepath.EvalSymlinks(execPath)
+	return execPath, err
 }
 
 func readClaudeDesktopConfig(fileName string) (map[string]interface{}, bool) {
