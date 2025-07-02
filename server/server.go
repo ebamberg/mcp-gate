@@ -8,7 +8,7 @@ import (
 
 func StartServer() *server.MCPServer {
 	s := server.NewMCPServer(
-		"Calculator Demo",
+		"MCP Gate",
 		"1.0.0",
 		server.WithToolCapabilities(false),
 		server.WithRecovery(),
