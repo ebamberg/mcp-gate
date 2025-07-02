@@ -38,6 +38,8 @@ var claudeCmd = &cobra.Command{
 		configfilename := path.Join(configdir, "claude_desktop_config.json")
 		if config, found := readClaudeDesktopConfig(configfilename); found {
 			addMCPGateToClaudeDesktopConfig(config)
+			newConfig, _ := json.Marshal(&config)
+			fmt.Println("New config: ", string(newConfig))
 		} else {
 			log.Printf("Claude desktop config not found in %s. Maybe Claude Desktop not installed ?\n", configfilename)
 		}
