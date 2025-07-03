@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"path"
@@ -37,14 +38,63 @@ var claudeCmd = &cobra.Command{
 		configdir := path.Join(userconfigdir, "Claude")
 		configfilename := path.Join(configdir, "claude_desktop_config.json")
 		if config, found := readClaudeDesktopConfig(configfilename); found {
+			if err := backupClaudeDesktopConfig(configfilename); err != nil {
+				log.Fatalf("Error backing up Claude Desktop config file:%s\n", err)
+			}
 			addMCPGateToClaudeDesktopConfig(config)
-			newConfig, _ := json.Marshal(&config)
-			fmt.Println("New config: ", string(newConfig))
+			err := saveClaudeDesktopConfig(configfilename, config)
+			if err != nil {
+				log.Println("error writing config file: %w", err)
+			}
 		} else {
 			log.Printf("Claude desktop config not found in %s. Maybe Claude Desktop not installed ?\n", configfilename)
 		}
 
 	},
+}
+
+func backupClaudeDesktopConfig(fileName string) error {
+	backupFileName := fileName + ".bak"
+	_, err := os.Stat(backupFileName)
+	if err == nil {
+		log.Println("Backup file already exists, skipping backup")
+		return nil
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return fmt.Errorf("error checking backup file: %w", err)
+	}
+
+	fin, err := os.Open(fileName)
+	if err != nil {
+		return err
+	}
+	defer fin.Close()
+
+	fout, err := os.Create(backupFileName)
+	if err != nil {
+		return fmt.Errorf("error creating backup file: %w", err)
+	}
+	defer fout.Close()
+
+	_, err = io.Copy(fout, fin)
+	if err != nil {
+		return fmt.Errorf("error creating backup file: %w", err)
+	}
+	log.Println("Claude Desktop config backed up to", backupFileName)
+	return nil
+}
+
+func saveClaudeDesktopConfig(fileName string, config map[string]interface{}) error {
+	jsonConfig, err := json.MarshalIndent(config, "", "  ")
+	if err != nil {
+		return fmt.Errorf("error marshalling config: %w", err)
+	}
+
+	err = os.WriteFile(fileName, jsonConfig, 0644)
+	if err != nil {
+		return fmt.Errorf("error writing config file: %w", err)
+	}
+	log.Println("Claude Desktop config saved")
+	return nil
 }
 
 func addMCPGateToClaudeDesktopConfig(config map[string]interface{}) error {
@@ -66,10 +116,9 @@ func addMCPGateToClaudeDesktopConfig(config map[string]interface{}) error {
 		}
 		mcpServers["mcp-gate"] = map[string]any{
 			"command": executable,
-			"args":    []string{"server", "--transport", "ipc"},
+			"args":    []string{"server"},
 		}
 	}
-	fmt.Println(mcpnode)
 	return nil
 }
 
