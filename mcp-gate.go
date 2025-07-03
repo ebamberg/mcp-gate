@@ -40,20 +40,20 @@ func initConfig() {
 
 	// Read the config file
 	err := viper.ReadInConfig()
-	if err != nil {
-		fmt.Println("Can't read config:", err)
-		os.Exit(1)
-	}
-
-	// Unmarshal the config file into the AppConfig struct
-	err = viper.Unmarshal(&Config)
-	if err != nil {
-		fmt.Println("Can't read config:", err)
-		os.Exit(1)
+	if err != nil && !os.IsNotExist(err) {
+		fmt.Fprintln(os.Stderr, "Can't read config:", err)
+	} else {
+		// Unmarshal the config file into the AppConfig struct
+		err = viper.Unmarshal(&Config)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "Can't read config:", err)
+			os.Exit(1)
+		}
 	}
 }
 
 func configLogging() {
+
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
 	log.SetPrefix("MCP-GATE: ")
 }

@@ -5,6 +5,7 @@ package cmd
 
 import (
 	"log"
+	"os"
 
 	"github.com/ebamberg/mcp-gate/server"
 	"github.com/spf13/cobra"
@@ -16,6 +17,12 @@ var serverCmd = &cobra.Command{
 	Short: "start the MCP server",
 	Long:  `start the MCP Gate proxy as a server and allows Client to connect.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		redirectToStderr, _ := cmd.Flags().GetBool("redirect-to-stderr")
+		if redirectToStderr {
+			redirectLoggingToStdErr()
+		} else {
+			redirectLoggingToFile()
+		}
 		log.Println("Start MCP Gate server")
 		server.StartServer()
 	},
@@ -23,14 +30,22 @@ var serverCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(serverCmd)
+	serverCmd.PersistentFlags().BoolP("redirect-to-stderr", "", false, "whether to redirect alll log output to stderr. This is useful when the tool runs locally in Claude Desktop to redirct logging to the client log folder.")
+}
 
-	// Here you will define your flags and configuration settings.
+func redirectLoggingToFile() {
+	// Redirect log output to a file
 
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// serverCmd.PersistentFlags().String("foo", "", "A help for foo")
+	f, err := os.OpenFile("mcp_gate.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		log.Fatalf("error opening file: %v", err)
+	}
+	defer f.Close()
 
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// serverCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	log.SetOutput(f)
+}
+
+func redirectLoggingToStdErr() {
+	// Redirect log output to stderr
+	log.SetOutput(os.Stderr)
 }
