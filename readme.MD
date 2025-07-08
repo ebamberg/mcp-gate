@@ -35,5 +35,22 @@ Before writing the Claude Desktop config file a backup is created in the same fo
 | server  | start the gateway & proxy in mcp server mode                             |
 | install | installs the gateway in target for example `install claude`              |
 
+# the admin tool
+
+By using the 
+```
+mcp-gate server --with-admin-tools
+```
+
+you can instruct to add administration tools for mcp-gate itself to your client-application.
+The admin tools allows you to administer mcp-gate out of a LLM session.
+
+Admin Tools are automatically installed when installing mcp-gate in Claude using the 
+```
+mcp-gate install claude 
+```
+command
+
+
 # Disclaimer
 This project is provided as-is and it's still in experimental phase. The authors make no warranties regarding the code's suitability for any particular purpose. Users should not deploy this code in production environments without significant modifications and testing.
