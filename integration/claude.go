@@ -73,7 +73,7 @@ func AddMCPGateToClaudeDesktopConfig(config map[string]interface{}) error {
 		}
 		mcpServers["mcp-gate"] = map[string]any{
 			"command": executable,
-			"args":    []string{"server", "--redirect-to-stderr"},
+			"args":    []string{"server", "--redirect-to-stderr", "--with-admin-tools"},
 		}
 	}
 	return nil

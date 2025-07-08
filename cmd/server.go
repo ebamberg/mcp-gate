@@ -23,14 +23,16 @@ var serverCmd = &cobra.Command{
 		} else {
 			redirectLoggingToFile()
 		}
+		withAdminTools, _ := cmd.Flags().GetBool("with-admin-tools")
 		log.Println("Start MCP Gate server")
-		server.StartServer()
+		server.StartServer(withAdminTools)
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(serverCmd)
 	serverCmd.PersistentFlags().BoolP("redirect-to-stderr", "", false, "whether to redirect alll log output to stderr. This is useful when the tool runs locally in Claude Desktop to redirct logging to the client log folder.")
+	serverCmd.PersistentFlags().BoolP("with-admin-tools", "", false, "add the mcg-gate admin tools which allows administration of mcp-gate out of you LLM client.")
 }
 
 func redirectLoggingToFile() {
