@@ -10,10 +10,6 @@ import (
 
 func TestAddMCPGateToClaudeDesktopConfig(t *testing.T) {
 
-	if True == True {
-		t.Errorf("Failed")
-	}
-
 }
 
 func TestBackupClaudeDesktopConfig(t *testing.T) {

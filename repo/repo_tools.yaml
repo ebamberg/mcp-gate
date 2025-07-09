@@ -1,0 +1,17 @@
+- name: run
+  description: Run the server
+  command: "test"
+  args:
+- name: "mcp-hfspace"
+  descriptionn: "Use Huggingface Space and models hosted on Huggingface"
+  command: "npx"
+  args: 
+    - "-y"
+    - "@llmindset/mcp-hfspace"
+    - "--work-dir=/Users/erikb/mcp-store"
+    - "shuttleai/shuttle-jaguar"
+    - "styletts2/styletts2"
+    - "Qwen/QVQ-72B-preview"
+  dependencies:
+    - "npx"
+
