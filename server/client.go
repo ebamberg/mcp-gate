@@ -111,6 +111,22 @@ func (client *Client) Connect() error {
 	return nil
 }
 
+func (client *Client) Stop() error {
+	if client.proxied_client == nil || client.Status == UNINITIALIZED || client.Status == FAILED {
+		return fmt.Errorf("Client is not initialized")
+	}
+
+	log.Println("Stopping client...")
+	if err := client.proxied_client.Close(); err != nil {
+		client.Status = FAILED
+		return fmt.Errorf("Failed to stop client: %v", err)
+	}
+
+	client.Status = STOPPED
+	log.Println("Client stopped successfully")
+	return nil
+}
+
 func NewClient(config repo.RepositoryEntry) (*Client, error) {
 	var client *Client
 	var err error = nil
