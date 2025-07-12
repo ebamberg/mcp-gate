@@ -1,9 +1,11 @@
 - name: run
   description: Run the server
+  transport: "ipc"
   command: "test"
   args:
 - name: "mcp-hfspace"
   descriptionn: "Use Huggingface Space and models hosted on Huggingface"
+  transport: "ipc"
   command: "npx"
   args: 
     - "-y"
