@@ -77,42 +77,24 @@ func (client *Client) Connect() error {
 
 	client.Status = CONNECTED
 
-	// List available tools if the server supports them
-	if client.serverInfo.Capabilities.Tools != nil {
-		fmt.Println("Fetching available tools...")
-		toolsRequest := mcp.ListToolsRequest{}
-		toolsResult, err := client.proxied_client.ListTools(ctx, toolsRequest)
-		if err != nil {
-			log.Printf("Failed to list tools: %v", err)
-		} else {
-			fmt.Printf("Server has %d tools available\n", len(toolsResult.Tools))
-			for i, tool := range toolsResult.Tools {
-				log.Printf("  %d. %s - %s\n", i+1, tool.Name, tool.Description)
-			}
-		}
-	}
-
-	// List available resources if the server supports them
-	if client.serverInfo.Capabilities.Resources != nil {
-		fmt.Println("Fetching available resources...")
-		resourcesRequest := mcp.ListResourcesRequest{}
-		resourcesResult, err := client.proxied_client.ListResources(ctx, resourcesRequest)
-		if err != nil {
-			log.Printf("Failed to list resources: %v", err)
-		} else {
-			log.Printf("Server has %d resources available\n", len(resourcesResult.Resources))
-			for i, resource := range resourcesResult.Resources {
-				log.Printf("  %d. %s - %s\n", i+1, resource.URI, resource.Name)
-			}
-		}
-	}
-
 	log.Println("Client initialized successfully...")
 	return nil
 }
 
+func (client *Client) isConnected() bool {
+	return client.proxied_client != nil && client.Status == CONNECTED
+}
+
+func (client *Client) exitOnNotConnected() (bool, error) {
+	if !client.isConnected() {
+		return true, fmt.Errorf("Client is not initialized")
+	} else {
+		return false, nil
+	}
+}
+
 func (client *Client) Stop() error {
-	if client.proxied_client == nil || client.Status == UNINITIALIZED || client.Status == FAILED {
+	if !client.isConnected() {
 		return fmt.Errorf("Client is not initialized")
 	}
 
@@ -125,6 +107,59 @@ func (client *Client) Stop() error {
 	client.Status = STOPPED
 	log.Println("Client stopped successfully")
 	return nil
+}
+
+func (client *Client) ListTools() ([]mcp.Tool, error) {
+
+	if exit, reason := client.exitOnNotConnected(); exit {
+		return nil, reason
+	}
+
+	var tools []mcp.Tool
+	var err error = nil
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	// List available tools if the server supports them
+	if client.serverInfo.Capabilities.Tools != nil {
+		log.Println("Fetching available tools...")
+		toolsRequest := mcp.ListToolsRequest{}
+		toolsResult, err := client.proxied_client.ListTools(ctx, toolsRequest)
+		if err != nil {
+			log.Printf("Failed to list tools: %v", err)
+		} else {
+			for _, tool := range toolsResult.Tools {
+				tools = append(tools, tool)
+			}
+		}
+	}
+	return tools, err
+}
+
+func (client *Client) ListResources() ([]mcp.Resource, error) {
+
+	if exit, reason := client.exitOnNotConnected(); exit {
+		return nil, reason
+	}
+
+	var resources []mcp.Resource
+	var err error = nil
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	// List available resources if the server supports them
+	if client.serverInfo.Capabilities.Resources != nil {
+		log.Println("Fetching available resources...")
+		resourcesRequest := mcp.ListResourcesRequest{}
+		resourcesResult, err := client.proxied_client.ListResources(ctx, resourcesRequest)
+		if err != nil {
+			log.Printf("Failed to list resources: %v", err)
+		} else {
+			for _, resource := range resourcesResult.Resources {
+				resources = append(resources, resource)
+			}
+		}
+	}
+	return resources, err
 }
 
 func NewClient(config repo.RepositoryEntry) (*Client, error) {
