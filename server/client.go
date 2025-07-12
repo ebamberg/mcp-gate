@@ -41,11 +41,15 @@ func RegisterMCPTool(config repo.RepositoryEntry) error {
 	return nil
 }
 
-func initNotificationHandler(c *mcpclient.Client) {
+func (client *Client) addNotificationHandler() error {
+	if exit, reason := client.exitOnNotConnected(); exit {
+		return reason
+	}
 	// Set up notification handler
-	c.OnNotification(func(notification mcp.JSONRPCNotification) {
+	client.proxied_client.OnNotification(func(notification mcp.JSONRPCNotification) {
 		log.Printf("Received notification: %s\n", notification.Method)
 	})
+	return nil
 }
 
 func (client *Client) Connect() error {
@@ -218,7 +222,7 @@ func NewIPCClient(config repo.RepositoryEntry) (*Client, error) {
 			}
 		}()
 	} else {
-		log.Println("%s: No stderr available for logging", config.Name)
+		log.Printf("%s: No stderr available for logging", config.Name)
 	}
 
 	return client, nil
