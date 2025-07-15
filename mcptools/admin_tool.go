@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/ebamberg/mcp-gate/client"
 	"github.com/ebamberg/mcp-gate/repo"
+
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 )
@@ -38,7 +40,7 @@ func RegisterAdminTool(server *server.MCPServer) {
 	server.AddResource(mcpGateVersionResourceSchema(), mcpGateVersionResourceHandler)
 	// Add the install a tool handler
 	server.AddTool(listAvailableToolsSchema(), listAvailableToolsHandler)
-	server.AddTool(adminInstallToolSchema(), installToolHandler)
+	server.AddTool(adminInstallToolSchema(), createInstallToolHandler(server))
 }
 
 func mcpGateVersionResourceHandler(ctx context.Context, request mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
@@ -66,12 +68,29 @@ func listAvailableToolsHandler(ctx context.Context, request mcp.CallToolRequest)
 	return mcp.NewToolResultText(fmt.Sprintf("List of mcp-server-tools than can be installed and can be used.\n\n %s ", result)), nil
 }
 
-func installToolHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	// Using helper functions for type-safe argument access
-	toolname, err := request.RequireString("toolname")
-	if err != nil {
-		return mcp.NewToolResultError(err.Error()), nil
-	}
+func createInstallToolHandler(server *server.MCPServer) func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 
-	return mcp.NewToolResultText(fmt.Sprintf("the mcp-server-tool %s is installed and can be used.", toolname)), nil
+	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		// Using helper functions for type-safe argument access
+		toolname, err := request.RequireString("toolname")
+		if err != nil {
+			return mcp.NewToolResultError(err.Error()), nil
+		}
+		repoEntries, err := repo.ListAvailableTools()
+		if err != nil {
+			return mcp.NewToolResultError(err.Error()), nil
+		}
+		for _, entry := range repoEntries {
+			if entry.Name == toolname {
+				// Register the tool in the server
+				err := client.RegisterMCPTool(server, entry)
+				if err != nil {
+					return mcp.NewToolResultError(err.Error()), nil
+				}
+				return mcp.NewToolResultText(fmt.Sprintf("Tool %s installed successfully.", toolname)), nil
+			}
+		}
+
+		return mcp.NewToolResultText(fmt.Sprintf("The tool %s is not available. I was unable to install the tool.", toolname)), nil
+	}
 }

@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/ebamberg/mcp-gate/mcptools"
 	"github.com/ebamberg/mcp-gate/server"
 	"github.com/spf13/cobra"
 )
@@ -24,8 +25,15 @@ var serverCmd = &cobra.Command{
 			redirectLoggingToFile()
 		}
 		withAdminTools, _ := cmd.Flags().GetBool("with-admin-tools")
+
 		log.Println("Start MCP Gate server")
-		server.StartServer(withAdminTools)
+		serv := server.NewServer()
+		if withAdminTools {
+			log.Println("Adding MCP Gate admin tools")
+			mcptools.RegisterAdminTool(serv)
+		}
+		server.StartServer(serv)
+		log.Println("MCP Gate server started")
 	},
 }
 

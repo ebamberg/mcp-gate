@@ -1,4 +1,4 @@
-package server
+package client
 
 import (
 	"context"
@@ -12,6 +12,7 @@ import (
 	mcpclient "github.com/mark3labs/mcp-go/client"
 	"github.com/mark3labs/mcp-go/client/transport"
 	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/mark3labs/mcp-go/server"
 )
 
 type ClientStatus int64
@@ -30,15 +31,17 @@ type Client struct {
 	serverInfo     *mcp.InitializeResult
 }
 
-func RegisterMCPTool(config repo.RepositoryEntry) error {
+func RegisterMCPTool(server *server.MCPServer, config repo.RepositoryEntry) error {
 
 	client, err := NewClient(config)
 	if err != nil {
 		return fmt.Errorf("Failed to build client for tool %s: %v", config.Name, err)
 	}
 	err = client.Connect()
-	//	schema := buildToolSchema(config)
-	return nil
+	if err != nil {
+		LinkProxyClientToServer(server, client)
+	}
+	return err
 }
 
 func (client *Client) addNotificationHandler() error {
@@ -263,4 +266,22 @@ func buildToolSchema(config repo.RepositoryEntry) mcp.Tool {
 		options...,
 	)
 	return schema
+}
+
+func LinkProxyClientToServer(server *server.MCPServer, client *Client) error {
+	tools, err := client.ListTools()
+	if err != nil {
+		return err
+	}
+	for _, tool := range tools {
+		server.AddTool(tool, proxyToolHandler)
+	}
+	return nil
+}
+
+func proxyToolHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+
+	// TODO: Forward the request to the client
+
+	return mcp.NewToolResultText(fmt.Sprintf("Tool %s called .\n\n ", request)), nil
 }
